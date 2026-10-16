@@ -1,0 +1,6 @@
+{
+  "name": "Thai Tax Invoice & Receipt Builder",
+  "description": "ระบบสร้างและจัดการใบกำกับภาษี/ใบเสร็จรับเงิน (Thai Tax Invoice & Receipt Builder) พร้อมคำนวณ VAT, แปลงบาทข้อความ, จัดการลูกค้า และพิมพ์เอกสาร A4 ต้นฉบับ/สำเนา",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

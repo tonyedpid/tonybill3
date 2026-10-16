@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Noto Sans Thai', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0f172a;
+    background-color: #f8fafc;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Print Stylesheet for A4 Portrait */
+@page {
+  size: A4 portrait;
+  margin: 8mm 10mm 8mm 10mm;
+}
+
+@media print {
+  /* Hide all dashboard chrome and UI controls */
+  .no-print,
+  nav,
+  header,
+  footer.app-footer,
+  button,
+  .confirm-dialog,
+  input[type="file"],
+  #app-startup-fallback {
+    display: none !important;
+  }
+
+  /* Reset body and background for printing */
+  html, body {
+    width: 210mm !important;
+    height: 297mm !important;
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 11pt !important;
+    line-height: 1.35 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ensure root container takes natural flow without scrolling */
+  #root {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Print document container: single A4 page constraint */
+  .invoice-sheet {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 275mm !important;
+    height: 275mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-inside: avoid !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+
+  /* Keep table borders sharp in print */
+  table {
+    border-collapse: collapse !important;
+  }
+
+  th, td {
+    border-color: #cbd5e1 !important;
+  }
+
+  /* Ensure background colors in highlight boxes are preserved */
+  .bg-orange-50\/80,
+  .bg-slate-100,
+  .bg-slate-50 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
