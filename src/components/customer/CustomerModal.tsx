@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
-import { X, Plus, Search, Edit2, Trash2, Users, AlertCircle, Check } from 'lucide-react';
+import {
+  X,
+  Plus,
+  Search,
+  Edit2,
+  Trash2,
+  Users,
+  AlertCircle,
+  Check,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react';
 import { Customer, BranchType, VatMode } from '../../types';
 import { validateThaiTaxId, cleanTaxId, formatThaiTaxId } from '../../utils/thaiTaxId';
 import { ConfirmDialog } from '../common/ConfirmDialog';
@@ -11,6 +23,7 @@ interface Props {
   onSaveCustomer: (customer: Customer) => Promise<void>;
   onDeleteCustomer: (id: string) => Promise<void>;
   onSelectCustomer?: (customer: Customer) => void;
+  onReorderCustomers?: (customers: Customer[]) => Promise<void> | void;
 }
 
 const EMPTY_CUSTOMER: Omit<Customer, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -33,6 +46,7 @@ export const CustomerModal: React.FC<Props> = ({
   onSaveCustomer,
   onDeleteCustomer,
   onSelectCustomer,
+  onReorderCustomers,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -41,6 +55,62 @@ export const CustomerModal: React.FC<Props> = ({
   const [taxIdError, setTaxIdError] = useState('');
   const [aliasError, setAliasError] = useState('');
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  const handleMoveUp = (index: number) => {
+    if (index <= 0 || searchQuery.trim()) return;
+    const updated = [...customers];
+    const temp = updated[index];
+    updated[index] = updated[index - 1];
+    updated[index - 1] = temp;
+    onReorderCustomers?.(updated);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index >= customers.length - 1 || searchQuery.trim()) return;
+    const updated = [...customers];
+    const temp = updated[index];
+    updated[index] = updated[index + 1];
+    updated[index + 1] = temp;
+    onReorderCustomers?.(updated);
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    if (searchQuery.trim()) return;
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(index));
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (searchQuery.trim()) return;
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    if (searchQuery.trim() || draggedIndex === null || draggedIndex === targetIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    const updated = [...customers];
+    const [moved] = updated.splice(draggedIndex, 1);
+    updated.splice(targetIndex, 0, moved);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    onReorderCustomers?.(updated);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
 
   if (!isOpen) return null;
 
@@ -444,72 +514,133 @@ export const CustomerModal: React.FC<Props> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
-                    {filteredCustomers.map((c) => (
-                      <div
-                        key={c.id}
-                        className="p-4 hover:bg-slate-50/80 transition-colors flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <span className="font-bold text-sm text-slate-900">
-                              {c.alias}
-                            </span>
-                            <span className="text-xs text-slate-500">
-                              · {c.legalName}
-                            </span>
-                            <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono">
-                              {c.branchType === 'head_office' ? 'สำนักงานใหญ่' : `สาขา ${c.branchNumber}`}
-                            </span>
-                            <span className="text-[11px] text-slate-500">
-                              VAT: {c.defaultVatMode === '+' ? 'แยก 7%' : c.defaultVatMode === '-' ? 'รวม 7%' : 'ไม่คิด'}
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-slate-600 truncate max-w-2xl mb-1">
-                            {c.address}
-                          </p>
-
-                          <div className="flex items-center gap-3 text-xs text-slate-500 font-mono flex-wrap">
-                            {c.taxId && <span>Tax ID: {formatThaiTaxId(c.taxId)}</span>}
-                            {c.contactPerson && <span className="font-sans">ผู้ติดต่อ: {c.contactPerson}</span>}
-                            {c.phone && <span>โทร: {c.phone}</span>}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                          {onSelectCustomer && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                onSelectCustomer(c);
-                                onClose();
-                              }}
-                              className="px-3 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-md transition-colors cursor-pointer"
-                            >
-                              เลือกใส่อินวอยซ์
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(c)}
-                            className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
-                            title="แก้ไข"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteTargetId(c.id)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
-                            title="ลบ"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                  <>
+                    {!searchQuery.trim() && (
+                      <div className="text-[11px] text-slate-500 flex items-center gap-1.5 mb-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+                        <GripVertical className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>กดเม้าส์ค้างแล้วลากเพื่อย้ายตำแหน่งลูกค้า หรือใช้ปุ่มลูกศร ขึ้น-ลง (↑ / ↓) เพื่อจัดลำดับ</span>
                       </div>
-                    ))}
-                  </div>
+                    )}
+
+                    <div className="border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100">
+                      {filteredCustomers.map((c) => {
+                        const index = customers.findIndex((item) => item.id === c.id);
+                        const isBeingDragged = draggedIndex === index;
+                        const isDragOver = dragOverIndex === index;
+
+                        return (
+                          <div
+                            key={c.id}
+                            draggable={!searchQuery.trim()}
+                            onDragStart={(e) => handleDragStart(e, index)}
+                            onDragOver={(e) => handleDragOver(e, index)}
+                            onDrop={(e) => handleDrop(e, index)}
+                            onDragEnd={handleDragEnd}
+                            className={`p-3.5 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                              isDragOver
+                                ? 'bg-orange-50/90 ring-2 ring-orange-500 ring-inset'
+                                : isBeingDragged
+                                ? 'opacity-40 bg-slate-100'
+                                : 'hover:bg-slate-50/80'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                              {/* Drag Handle & Up/Down Arrows */}
+                              <div className="flex items-center gap-1 shrink-0">
+                                <div
+                                  className={`p-1 text-slate-400 hover:text-slate-700 cursor-grab active:cursor-grabbing rounded hover:bg-slate-100 ${
+                                    searchQuery ? 'opacity-20 cursor-not-allowed' : ''
+                                  }`}
+                                  title={searchQuery ? 'ไม่สามารถลากขณะค้นหา' : 'คลิกค้างแล้วลากเพื่อย้ายตำแหน่ง'}
+                                >
+                                  <GripVertical className="w-4 h-4" />
+                                </div>
+
+                                <div className="flex flex-col gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveUp(index)}
+                                    disabled={index <= 0 || !!searchQuery.trim()}
+                                    title="เลื่อนขึ้น (Move Up)"
+                                    className="p-1 rounded text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                  >
+                                    <ArrowUp className="w-3 h-3" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveDown(index)}
+                                    disabled={index >= customers.length - 1 || !!searchQuery.trim()}
+                                    title="เลื่อนลง (Move Down)"
+                                    className="p-1 rounded text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 disabled:opacity-20 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                                  >
+                                    <ArrowDown className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                  <span className="font-bold text-sm text-slate-900">
+                                    {c.alias}
+                                  </span>
+                                  <span className="text-xs text-slate-500">
+                                    · {c.legalName}
+                                  </span>
+                                  <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono">
+                                    {c.branchType === 'head_office' ? 'สำนักงานใหญ่' : `สาขา ${c.branchNumber}`}
+                                  </span>
+                                  <span className="text-[11px] text-slate-500">
+                                    VAT: {c.defaultVatMode === '+' ? 'แยก 7%' : c.defaultVatMode === '-' ? 'รวม 7%' : 'ไม่คิด'}
+                                  </span>
+                                </div>
+
+                                <p className="text-xs text-slate-600 truncate max-w-2xl mb-1">
+                                  {c.address}
+                                </p>
+
+                                <div className="flex items-center gap-3 text-xs text-slate-500 font-mono flex-wrap">
+                                  {c.taxId && <span>Tax ID: {formatThaiTaxId(c.taxId)}</span>}
+                                  {c.contactPerson && <span className="font-sans">ผู้ติดต่อ: {c.contactPerson}</span>}
+                                  {c.phone && <span>โทร: {c.phone}</span>}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                              {onSelectCustomer && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onSelectCustomer(c);
+                                    onClose();
+                                  }}
+                                  className="px-3 py-1.5 text-xs font-medium text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-md transition-colors cursor-pointer"
+                                >
+                                  เลือกใส่อินวอยซ์
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEdit(c)}
+                                className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-200/60 rounded-md transition-colors cursor-pointer"
+                                title="แก้ไข"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setDeleteTargetId(c.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
+                                title="ลบ"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
               </>
             )}

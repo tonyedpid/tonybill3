@@ -29,6 +29,7 @@ export interface Customer {
   defaultVatMode: VatMode;
   phone?: string;
   email?: string;
+  order?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -87,7 +88,7 @@ export interface SavedInvoice {
   updatedAt: string;
 }
 
-export type ScreenView = 'editor' | 'preview_original' | 'preview_copy';
+export type ScreenView = 'editor' | 'preview_original' | 'preview_copy' | 'preview_all';
 
 export interface InvoiceDraft {
   invoiceNumber: string;

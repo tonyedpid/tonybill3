@@ -127,6 +127,17 @@ export async function saveIssuerProfile(profile: IssuerProfile): Promise<void> {
 // ---------------- CUSTOMER STORE ---------------- //
 
 export async function getAllCustomers(): Promise<Customer[]> {
+  const sortCustomers = (list: Customer[]) => {
+    return list.sort((a, b) => {
+      if (typeof a.order === 'number' && typeof b.order === 'number') {
+        return a.order - b.order;
+      }
+      if (typeof a.order === 'number') return -1;
+      if (typeof b.order === 'number') return 1;
+      return 0;
+    });
+  };
+
   try {
     const db = await openDB();
     return new Promise((resolve) => {
@@ -134,12 +145,37 @@ export async function getAllCustomers(): Promise<Customer[]> {
       const store = tx.objectStore(STORE_CUSTOMERS);
       const req = store.getAll();
       req.onsuccess = () => {
-        resolve(req.result || []);
+        const list: Customer[] = req.result || [];
+        resolve(sortCustomers(list));
       };
-      req.onerror = () => resolve(Array.from(memoryFallback.customers.values()));
+      req.onerror = () => resolve(sortCustomers(Array.from(memoryFallback.customers.values())));
     });
   } catch {
-    return Array.from(memoryFallback.customers.values());
+    return sortCustomers(Array.from(memoryFallback.customers.values()));
+  }
+}
+
+export async function saveCustomerOrder(reorderedCustomers: Customer[]): Promise<void> {
+  const updatedList = reorderedCustomers.map((c, idx) => ({ ...c, order: idx }));
+
+  memoryFallback.customers.clear();
+  updatedList.forEach((c) => {
+    memoryFallback.customers.set(c.id, c);
+  });
+
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_CUSTOMERS, 'readwrite');
+      const store = tx.objectStore(STORE_CUSTOMERS);
+      updatedList.forEach((c) => {
+        store.put(c);
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn('Saved customer order to memory fallback:', err);
   }
 }
 

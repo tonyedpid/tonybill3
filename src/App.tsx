@@ -21,11 +21,17 @@ import {
   deleteInvoice,
   getNumberConfig,
   saveNumberConfig,
+  saveCustomerOrder,
 } from './services/db';
 import { SAMPLE_ISSUER, SAMPLE_CUSTOMERS } from './services/seed';
-import { getNextAvailableInvoiceNumber } from './utils/numbering';
+import {
+  getNextAvailableInvoiceNumber,
+  getNextInvoiceNumberFromLatest,
+  extractSequenceNumber,
+} from './utils/numbering';
 import { getTodayIsoDate } from './utils/thaiDate';
 import { calculateInvoiceTotals, calculateLineTotal } from './utils/calculations';
+import { Printer } from 'lucide-react';
 
 import { Navbar } from './components/common/Navbar';
 import { InvoiceEditor } from './components/editor/InvoiceEditor';
@@ -138,7 +144,13 @@ export function App() {
 
       // Generate invoice number if draft is empty
       const existingNumbers = storedInvoices.map((inv) => inv.invoiceNumber);
-      const nextNum = getNextAvailableInvoiceNumber(storedConfig, existingNumbers, draft.issueDate);
+      const latestInv = storedInvoices.length > 0 ? storedInvoices[0] : null;
+      const nextNum = getNextInvoiceNumberFromLatest(
+        latestInv?.invoiceNumber,
+        storedConfig,
+        existingNumbers,
+        draft.issueDate
+      );
       setDraft((prev) => ({
         ...prev,
         invoiceNumber: prev.invoiceNumber || nextNum.invoiceNumber,
@@ -205,43 +217,99 @@ export function App() {
     setInvoices(updatedInvoices);
   };
 
+  // Create New Invoice / Reset to fresh draft
+  const handleCreateNewInvoice = async () => {
+    try {
+      const allInvoices = await getAllInvoices();
+      setInvoices(allInvoices);
+      const config = await getNumberConfig();
+      setNumberConfig(config);
+
+      const existingNumbers = allInvoices.map((inv) => inv.invoiceNumber);
+
+      // 1. Find latest saved invoice number
+      let latestSavedNumber: string | undefined = undefined;
+
+      if (allInvoices && allInvoices.length > 0) {
+        // Sort by most recent timestamp (updatedAt or createdAt)
+        const sorted = [...allInvoices].sort((a, b) => {
+          const timeA = new Date(a.updatedAt || a.createdAt).getTime();
+          const timeB = new Date(b.updatedAt || b.createdAt).getTime();
+          return timeB - timeA;
+        });
+        latestSavedNumber = sorted[0]?.invoiceNumber;
+
+        // If another invoice has a higher sequence number, prefer the higher one to avoid collisions
+        let maxSeq = extractSequenceNumber(latestSavedNumber || '') || 0;
+        for (const inv of allInvoices) {
+          const seq = extractSequenceNumber(inv.invoiceNumber);
+          if (seq !== null && seq > maxSeq) {
+            maxSeq = seq;
+            latestSavedNumber = inv.invoiceNumber;
+          }
+        }
+      }
+
+      // 2. If no saved invoices in DB yet, but draft has an invoiceNumber, increment +1 from it
+      if (!latestSavedNumber && draft.invoiceNumber && draft.invoiceNumber.trim()) {
+        latestSavedNumber = draft.invoiceNumber.trim();
+      }
+
+      const nextNum = getNextInvoiceNumberFromLatest(
+        latestSavedNumber,
+        config,
+        existingNumbers,
+        getTodayIsoDate()
+      );
+
+      // Advance sequence counter in numberConfig and persist
+      const updatedConfig = {
+        ...config,
+        nextSequence: Math.max(config.nextSequence, nextNum.sequence + 1),
+      };
+      await saveNumberConfig(updatedConfig);
+      setNumberConfig(updatedConfig);
+
+      setActiveSavedInvoiceId(null);
+      setDraft({
+        invoiceNumber: nextNum.invoiceNumber,
+        poNumber: '',
+        contactPerson: '',
+        issueDate: getTodayIsoDate(),
+        deliveryDate: '',
+        selectedCustomerId: undefined,
+        customerAlias: '',
+        buyer: {
+          legalName: '',
+          contactPerson: '',
+          address: '',
+          taxId: '',
+          branchType: 'head_office',
+          branchNumber: '00000',
+          phone: '',
+          email: '',
+        },
+        lineItems: [
+          {
+            id: `item-${Date.now()}`,
+            description: '',
+            quantity: 1,
+            unitPrice: 0,
+            total: 0,
+          },
+        ],
+        vatMode: '+',
+        notes: '',
+      });
+      setIsDraftModified(false);
+    } catch (err) {
+      console.error('Error creating new invoice:', err);
+    }
+  };
+
   // Reset Draft
   const handleResetDraft = () => {
-    const existingNumbers = invoices.map((inv) => inv.invoiceNumber);
-    const nextNum = getNextAvailableInvoiceNumber(numberConfig, existingNumbers, getTodayIsoDate());
-
-    setActiveSavedInvoiceId(null);
-    setDraft({
-      invoiceNumber: nextNum.invoiceNumber,
-      poNumber: '',
-      contactPerson: '',
-      issueDate: getTodayIsoDate(),
-      deliveryDate: '',
-      selectedCustomerId: undefined,
-      customerAlias: '',
-      buyer: {
-        legalName: '',
-        contactPerson: '',
-        address: '',
-        taxId: '',
-        branchType: 'head_office',
-        branchNumber: '00000',
-        phone: '',
-        email: '',
-      },
-      lineItems: [
-        {
-          id: `item-${Date.now()}`,
-          description: '',
-          quantity: 1,
-          unitPrice: 0,
-          total: 0,
-        },
-      ],
-      vatMode: '+',
-      notes: '',
-    });
-    setIsDraftModified(false);
+    handleCreateNewInvoice();
   };
 
   // Open saved invoice
@@ -411,11 +479,13 @@ export function App() {
               onDraftChange={handleDraftChange}
               onSaveInvoice={handleSaveInvoice}
               onResetDraft={handleResetDraft}
+              onCreateNewInvoice={handleCreateNewInvoice}
               onViewOriginal={() => setCurrentScreen('preview_original')}
               onViewCopy={() => setCurrentScreen('preview_copy')}
               onOpenIssuerModal={() => setIsIssuerModalOpen(true)}
               onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
               activeSavedInvoiceId={activeSavedInvoiceId}
+              latestInvoiceNumber={invoices.length > 0 ? invoices[0].invoiceNumber : undefined}
             />
           )}
 

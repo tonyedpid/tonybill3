@@ -129,32 +129,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             )}
           </button>
 
-          {/* Screen 2: Original Preview */}
+          {/* Combined Screen 2: ดูเอกสารก่อนพิมพ์ (Shows both Original & Copy) */}
           <button
             type="button"
-            onClick={() => onScreenChange('preview_original')}
+            onClick={() => onScreenChange('preview_all')}
             className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
-              currentScreen === 'preview_original'
+              currentScreen !== 'editor'
                 ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
             }`}
           >
             <FileCheck className="w-3.5 h-3.5 text-blue-600" />
-            <span>2. ต้นฉบับ / ORIGINAL</span>
-          </button>
-
-          {/* Screen 3: Copy Preview */}
-          <button
-            type="button"
-            onClick={() => onScreenChange('preview_copy')}
-            className={`px-3.5 py-1.5 text-xs font-semibold rounded-md transition-all flex items-center gap-1.5 cursor-pointer shrink-0 ${
-              currentScreen === 'preview_copy'
-                ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-            }`}
-          >
-            <Copy className="w-3.5 h-3.5 text-slate-600" />
-            <span>3. สำเนา / COPY</span>
+            <span>2. ดูเอกสารก่อนพิมพ์</span>
           </button>
         </div>
       </div>
