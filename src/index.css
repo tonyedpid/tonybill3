@@ -20,7 +20,8 @@
   /* Hide all dashboard chrome and UI controls */
   .no-print,
   nav,
-  header,
+  header.app-header,
+  .app-header,
   footer.app-footer,
   button,
   .confirm-dialog,
@@ -38,6 +39,7 @@
     padding: 0 !important;
     font-size: 11pt !important;
     line-height: 1.35 !important;
+    color: #000000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -64,6 +66,22 @@
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
+    color: #000000 !important;
+  }
+
+  /* Enforce black text and visibility on all invoice sheet contents */
+  .invoice-sheet,
+  .invoice-sheet * {
+    color: #000000 !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .invoice-sheet .invoice-header {
+    display: grid !important;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 
   .invoice-print-wrapper {
@@ -82,13 +100,16 @@
   }
 
   th, td {
-    border-color: #cbd5e1 !important;
+    border-color: #000000 !important;
+    color: #000000 !important;
   }
 
   /* Ensure background colors in highlight boxes are preserved */
   .bg-orange-50\/80,
   .bg-slate-100,
-  .bg-slate-50 {
+  .bg-slate-50,
+  .bg-neutral-100,
+  .bg-neutral-50 {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
