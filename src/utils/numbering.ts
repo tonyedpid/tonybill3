@@ -150,3 +150,30 @@ export function getNextInvoiceNumberFromLatest(
   // Fallback to standard config-based sequence generation
   return getNextAvailableInvoiceNumber(config, existingNumbers, isoDateString);
 }
+
+/**
+ * Increments the trailing sequence of digits in an invoice number string by +1.
+ * Preserves leading zero padding and any prefix/suffix.
+ * Examples:
+ * - "01" => "02"
+ * - "09" => "10"
+ * - "99" => "100"
+ * - "TK69 001" => "TK69 002"
+ * - "INV-2026-001" => "INV-2026-002"
+ * - "1" => "2"
+ */
+export function incrementInvoiceNumber(numStr: string): string {
+  if (!numStr || !numStr.trim()) return '';
+  const trimmed = numStr.trim();
+  const match = trimmed.match(/^(.*?)(\d+)([^\d]*)$/);
+  if (match) {
+    const prefix = match[1];
+    const digitsStr = match[2];
+    const suffix = match[3];
+    const width = digitsStr.length;
+    const nextVal = parseInt(digitsStr, 10) + 1;
+    const candidateDigits = String(nextVal).padStart(width, '0');
+    return `${prefix}${candidateDigits}${suffix}`;
+  }
+  return trimmed;
+}

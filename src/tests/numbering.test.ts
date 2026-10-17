@@ -91,4 +91,14 @@ describe('Invoice Numbering System', () => {
     const next4 = getNextInvoiceNumberFromLatest(undefined, config, [], '2026-10-16');
     expect(next4.invoiceNumber).toBe('TK69 001');
   });
+
+  it('increments custom numbers directly (+1), e.g. "01" -> "02"', async () => {
+    const { incrementInvoiceNumber } = await import('../utils/numbering');
+    expect(incrementInvoiceNumber('01')).toBe('02');
+    expect(incrementInvoiceNumber('02')).toBe('03');
+    expect(incrementInvoiceNumber('09')).toBe('10');
+    expect(incrementInvoiceNumber('1')).toBe('2');
+    expect(incrementInvoiceNumber('TK69 021')).toBe('TK69 022');
+    expect(incrementInvoiceNumber('INV-005')).toBe('INV-006');
+  });
 });

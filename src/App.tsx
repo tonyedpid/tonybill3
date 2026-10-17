@@ -28,6 +28,7 @@ import {
   getNextAvailableInvoiceNumber,
   getNextInvoiceNumberFromLatest,
   extractSequenceNumber,
+  incrementInvoiceNumber,
 } from './utils/numbering';
 import { getTodayIsoDate } from './utils/thaiDate';
 import { calculateInvoiceTotals, calculateLineTotal } from './utils/calculations';
@@ -227,52 +228,46 @@ export function App() {
 
       const existingNumbers = allInvoices.map((inv) => inv.invoiceNumber);
 
-      // 1. Find latest saved invoice number
-      let latestSavedNumber: string | undefined = undefined;
+      // Determine base number to increment (+1):
+      // 1. Prioritize current draft's invoice number on screen (e.g. "01" => "02")
+      // 2. Otherwise use the most recent saved invoice
+      let baseNumber = draft.invoiceNumber?.trim();
 
-      if (allInvoices && allInvoices.length > 0) {
-        // Sort by most recent timestamp (updatedAt or createdAt)
+      if (!baseNumber && allInvoices && allInvoices.length > 0) {
         const sorted = [...allInvoices].sort((a, b) => {
           const timeA = new Date(a.updatedAt || a.createdAt).getTime();
           const timeB = new Date(b.updatedAt || b.createdAt).getTime();
           return timeB - timeA;
         });
-        latestSavedNumber = sorted[0]?.invoiceNumber;
+        baseNumber = sorted[0]?.invoiceNumber?.trim();
+      }
 
-        // If another invoice has a higher sequence number, prefer the higher one to avoid collisions
-        let maxSeq = extractSequenceNumber(latestSavedNumber || '') || 0;
-        for (const inv of allInvoices) {
-          const seq = extractSequenceNumber(inv.invoiceNumber);
-          if (seq !== null && seq > maxSeq) {
-            maxSeq = seq;
-            latestSavedNumber = inv.invoiceNumber;
-          }
+      let nextInvoiceNumber = '';
+      let nextSeq = config.nextSequence;
+
+      if (baseNumber) {
+        nextInvoiceNumber = incrementInvoiceNumber(baseNumber);
+        const extracted = extractSequenceNumber(nextInvoiceNumber);
+        if (extracted !== null) {
+          nextSeq = extracted;
         }
+      } else {
+        const gen = getNextAvailableInvoiceNumber(config, existingNumbers, getTodayIsoDate());
+        nextInvoiceNumber = gen.invoiceNumber;
+        nextSeq = gen.sequence;
       }
-
-      // 2. If no saved invoices in DB yet, but draft has an invoiceNumber, increment +1 from it
-      if (!latestSavedNumber && draft.invoiceNumber && draft.invoiceNumber.trim()) {
-        latestSavedNumber = draft.invoiceNumber.trim();
-      }
-
-      const nextNum = getNextInvoiceNumberFromLatest(
-        latestSavedNumber,
-        config,
-        existingNumbers,
-        getTodayIsoDate()
-      );
 
       // Advance sequence counter in numberConfig and persist
       const updatedConfig = {
         ...config,
-        nextSequence: Math.max(config.nextSequence, nextNum.sequence + 1),
+        nextSequence: Math.max(config.nextSequence, nextSeq + 1),
       };
       await saveNumberConfig(updatedConfig);
       setNumberConfig(updatedConfig);
 
       setActiveSavedInvoiceId(null);
       setDraft({
-        invoiceNumber: nextNum.invoiceNumber,
+        invoiceNumber: nextInvoiceNumber,
         poNumber: '',
         contactPerson: '',
         issueDate: getTodayIsoDate(),
