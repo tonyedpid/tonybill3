@@ -49,7 +49,7 @@
     padding: 0 !important;
   }
 
-  /* Print document container: single A4 page constraint */
+  /* Print document container: single A4 page constraint per sheet */
   .invoice-sheet {
     width: 100% !important;
     max-width: 100% !important;
@@ -60,11 +60,20 @@
     border: none !important;
     box-shadow: none !important;
     page-break-inside: avoid !important;
-    page-break-after: avoid !important;
     break-inside: avoid !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
+  }
+
+  .invoice-print-wrapper {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .invoice-print-wrapper:not(:last-child) {
+    page-break-after: always !important;
+    break-after: page !important;
   }
 
   /* Keep table borders sharp in print */

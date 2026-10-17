@@ -423,6 +423,11 @@ export function App() {
     setCustomers(list);
   };
 
+  const handleReorderCustomers = async (reordered: Customer[]) => {
+    setCustomers(reordered);
+    await saveCustomerOrder(reordered);
+  };
+
   // Number config save
   const handleSaveNumberConfig = async (config: InvoiceNumberConfig) => {
     await saveNumberConfig(config);
@@ -482,11 +487,116 @@ export function App() {
               onCreateNewInvoice={handleCreateNewInvoice}
               onViewOriginal={() => setCurrentScreen('preview_original')}
               onViewCopy={() => setCurrentScreen('preview_copy')}
+              onViewPreview={() => setCurrentScreen('preview_all')}
               onOpenIssuerModal={() => setIsIssuerModalOpen(true)}
               onOpenCustomerModal={() => setIsCustomerModalOpen(true)}
               activeSavedInvoiceId={activeSavedInvoiceId}
               latestInvoiceNumber={invoices.length > 0 ? invoices[0].invoiceNumber : undefined}
             />
+          )}
+
+          {/* Combined Screen: แสดงตัวอย่างเอกสาร (ต้นฉบับ + สำเนา) */}
+          {currentScreen === 'preview_all' && (
+            <div className="py-6 px-4 sm:px-6">
+              {/* Document Banner toolbar */}
+              <div className="no-print max-w-[210mm] mx-auto mb-4 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="w-3 h-3 rounded-full bg-blue-600" />
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 leading-tight">
+                      หน้าแสดงตัวอย่างเอกสารก่อนพิมพ์ (Document Preview)
+                    </h2>
+                    <p className="text-[11px] text-slate-500">
+                      แสดงทั้ง ต้นฉบับ (ORIGINAL) และ สำเนา (COPY) พร้อมพิมพ์ออกกระดาษ A4
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentScreen('editor')}
+                    className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    กลับไปแก้ไข
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="px-4 py-1.5 text-xs font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-lg shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Printer className="w-4 h-4" />
+                    สั่งพิมพ์เอกสาร A4 (ทั้ง 2 แผ่น)
+                  </button>
+                </div>
+              </div>
+
+              {/* Both Documents: Original & Copy */}
+              <div className="space-y-8 print:space-y-0">
+                {/* 1. Original Document */}
+                <div className="invoice-print-wrapper">
+                  <div className="no-print max-w-[210mm] mx-auto mb-2 flex items-center justify-between px-1">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                      <span className="w-2 h-2 rounded-full bg-blue-600" />
+                      แผ่นที่ 1: ต้นฉบับ / ORIGINAL
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      {draft.invoiceNumber ? `เลขที่ ${draft.invoiceNumber}` : ''}
+                    </span>
+                  </div>
+                  <InvoiceDocument
+                    designation="original"
+                    invoiceNumber={draft.invoiceNumber}
+                    poNumber={draft.poNumber}
+                    contactPerson={draft.contactPerson}
+                    issueDate={draft.issueDate}
+                    deliveryDate={draft.deliveryDate}
+                    issuer={issuer}
+                    buyer={draft.buyer}
+                    lineItems={draft.lineItems}
+                    vatMode={draft.vatMode}
+                    totals={totals}
+                    notes={draft.notes}
+                  />
+                </div>
+
+                {/* Separator / Page Break indicator on screen */}
+                <div className="no-print max-w-[210mm] mx-auto py-2 flex items-center gap-3">
+                  <div className="flex-1 border-t border-dashed border-slate-300" />
+                  <span className="text-[11px] font-medium text-slate-400 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">
+                    สิ้นสุดแผ่นที่ 1 (ต้นฉบับ) • หน้าถัดไปคือแผ่นที่ 2 (สำเนา)
+                  </span>
+                  <div className="flex-1 border-t border-dashed border-slate-300" />
+                </div>
+
+                {/* 2. Copy Document */}
+                <div className="invoice-print-wrapper">
+                  <div className="no-print max-w-[210mm] mx-auto mb-2 flex items-center justify-between px-1">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-300">
+                      <span className="w-2 h-2 rounded-full bg-slate-500" />
+                      แผ่นที่ 2: สำเนา / COPY
+                    </span>
+                    <span className="text-[11px] text-slate-500 font-mono">
+                      {draft.invoiceNumber ? `เลขที่ ${draft.invoiceNumber}` : ''}
+                    </span>
+                  </div>
+                  <InvoiceDocument
+                    designation="copy"
+                    invoiceNumber={draft.invoiceNumber}
+                    poNumber={draft.poNumber}
+                    contactPerson={draft.contactPerson}
+                    issueDate={draft.issueDate}
+                    deliveryDate={draft.deliveryDate}
+                    issuer={issuer}
+                    buyer={draft.buyer}
+                    lineItems={draft.lineItems}
+                    vatMode={draft.vatMode}
+                    totals={totals}
+                    notes={draft.notes}
+                  />
+                </div>
+              </div>
+            </div>
           )}
 
           {currentScreen === 'preview_original' && (
@@ -496,7 +606,7 @@ export function App() {
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
                   <span className="text-xs font-bold text-slate-900">
-                    หน้าจอที่ 2: แสดงตัวอย่างเอกสารต้นฉบับ (ORIGINAL)
+                    แสดงตัวอย่างเอกสารต้นฉบับ (ORIGINAL)
                   </span>
                 </div>
 
@@ -510,10 +620,10 @@ export function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCurrentScreen('preview_copy')}
+                    onClick={() => setCurrentScreen('preview_all')}
                     className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
                   >
-                    สลับไปดูสำเนา
+                    ดูทั้งต้นฉบับและสำเนา
                   </button>
                   <button
                     type="button"
@@ -550,7 +660,7 @@ export function App() {
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-slate-600" />
                   <span className="text-xs font-bold text-slate-900">
-                    หน้าจอที่ 3: แสดงตัวอย่างเอกสารสำเนา (COPY)
+                    แสดงตัวอย่างเอกสารสำเนา (COPY)
                   </span>
                 </div>
 
@@ -564,10 +674,10 @@ export function App() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setCurrentScreen('preview_original')}
+                    onClick={() => setCurrentScreen('preview_all')}
                     className="px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors cursor-pointer"
                   >
-                    สลับไปดูต้นฉบับ
+                    ดูทั้งต้นฉบับและสำเนา
                   </button>
                   <button
                     type="button"
@@ -612,6 +722,7 @@ export function App() {
           customers={customers}
           onSaveCustomer={handleSaveCustomer}
           onDeleteCustomer={handleDeleteCustomer}
+          onReorderCustomers={handleReorderCustomers}
           onSelectCustomer={(c) => {
             setDraft((prev) => ({
               ...prev,
