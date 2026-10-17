@@ -145,10 +145,9 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({
               </div>
             </div>
 
-            {(buyer.contactPerson || buyer.phone) && (
+            {buyer.phone && (
               <div className="text-[11px] text-slate-500 mt-1">
-                {buyer.contactPerson && <span>ผู้ติดต่อ: {buyer.contactPerson} </span>}
-                {buyer.phone && <span>โทร: {buyer.phone}</span>}
+                <span>โทร: {buyer.phone}</span>
               </div>
             )}
           </div>
@@ -163,33 +162,17 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({
                 </span>
               </div>
               <div className="flex justify-between items-baseline border-b border-slate-200 pb-0.5">
-                <span className="text-slate-600 font-medium text-[11px]">วันที่ออกเอกสาร:</span>
-                <span className="font-medium text-[11px] text-slate-900">
-                  {formatThaiDate(issueDate, 'full')}
-                </span>
-              </div>
-              <div className="flex justify-between items-baseline border-b border-slate-200 pb-0.5">
                 <span className="text-slate-600 font-medium text-[11px]">เลขที่ PO:</span>
                 <span className="font-mono text-[11px] text-slate-800">
                   {poNumber || '-'}
                 </span>
               </div>
-              <div className="flex justify-between items-baseline border-b border-slate-200 pb-0.5">
+              <div className="flex justify-between items-baseline">
                 <span className="text-slate-600 font-medium text-[11px]">วันที่จัดส่ง:</span>
                 <span className="text-[11px] text-slate-800">
                   {deliveryDate ? formatThaiDate(deliveryDate, 'short') : '-'}
                 </span>
               </div>
-              <div className="flex justify-between items-baseline">
-                <span className="text-slate-600 font-medium text-[11px]">ชื่อผู้ติดต่อ:</span>
-                <span className="text-[11px] text-slate-800 truncate max-w-[130px]">
-                  {contactPerson || buyer.contactPerson || '-'}
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-1 pt-1 border-t border-slate-200 text-[10px] text-slate-500 text-right">
-              {vatMode === '+' ? 'ราคาแยกภาษีมูลค่าเพิ่ม 7%' : vatMode === '-' ? 'ราคารวมภาษีมูลค่าเพิ่ม 7%' : 'ไม่คิดภาษีมูลค่าเพิ่ม'}
             </div>
           </div>
         </div>

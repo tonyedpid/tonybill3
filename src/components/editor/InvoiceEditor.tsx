@@ -557,50 +557,19 @@ export const InvoiceEditor: React.FC<Props> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
-                  วันที่ออกเอกสาร <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={draft.issueDate}
-                  onChange={(e) => onDraftChange({ ...draft, issueDate: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-400 cursor-pointer"
-                />
-                <span className="text-[10px] text-slate-500 block mt-0.5 truncate">
-                  พ.ศ.: {formatThaiDate(draft.issueDate, 'short')}
-                </span>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
-                  วันที่จัดส่ง
-                </label>
-                <input
-                  type="date"
-                  value={draft.deliveryDate}
-                  onChange={(e) => onDraftChange({ ...draft, deliveryDate: e.target.value })}
-                  className="w-full px-2 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-400 cursor-pointer"
-                />
-                <span className="text-[10px] text-slate-500 block mt-0.5 truncate">
-                  พ.ศ.: {draft.deliveryDate ? formatThaiDate(draft.deliveryDate, 'short') : '-'}
-                </span>
-              </div>
-            </div>
-
             <div>
               <label className="block text-[11px] font-semibold text-slate-700 mb-0.5">
-                ชื่อผู้ติดต่อ
+                วันที่จัดส่ง
               </label>
               <input
-                type="text"
-                value={draft.contactPerson}
-                onChange={(e) => onDraftChange({ ...draft, contactPerson: e.target.value })}
-                placeholder="เช่น คุณกานดา"
-                className="w-full px-2.5 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-400"
+                type="date"
+                value={draft.deliveryDate}
+                onChange={(e) => onDraftChange({ ...draft, deliveryDate: e.target.value })}
+                className="w-full px-2 py-1.5 text-xs bg-white border border-slate-300 rounded-md focus:outline-none focus:ring-1 focus:ring-orange-400 cursor-pointer"
               />
+              <span className="text-[10px] text-slate-500 block mt-0.5 truncate">
+                พ.ศ.: {draft.deliveryDate ? formatThaiDate(draft.deliveryDate, 'short') : '-'}
+              </span>
             </div>
           </div>
         </div>
